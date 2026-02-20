@@ -531,7 +531,7 @@ async function loadPlaylists() {
       playlists.push(...data.items);
       url = data.next ? data.next.replace('https://api.spotify.com/v1', '') : null;
     }
-    S.playlists = playlists.filter(p => p && p.id && p.tracks);
+    S.playlists = playlists.filter(p => p && p.id);
     renderPlaylists();
     showScreen('screen-playlist');
   } catch(e) {
@@ -551,7 +551,7 @@ function renderPlaylists() {
     div.innerHTML =
       '<img src="' + img + '" alt="' + pl.name + '" loading="lazy" />' +
       '<div class="pl-name">' + pl.name + '</div>' +
-      '<div class="pl-count">' + pl.tracks.total + ' songs</div>';
+      '<div class="pl-count">' + (pl.tracks ? pl.tracks.total : 0) + ' songs</div>';
     div.onclick = function() { selectPlaylist(pl, div); };
     grid.appendChild(div);
   });
