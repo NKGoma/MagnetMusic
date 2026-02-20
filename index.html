@@ -536,7 +536,7 @@ async function loadPlaylists() {
     renderPlaylists();
     showScreen('screen-playlist');
   } catch(e) {
-    showToast('Could not load playlists: ' + e.message, true);
+    showToast('Could not load playlists: ' + (e.status ? e.status + ' ' : '') + e.message, true);
   } finally {
     setLoading(false);
   }
