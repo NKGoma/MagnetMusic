@@ -625,13 +625,7 @@ async function startGame() {
     renderPlayerChips();
     await playCurrentTrack();
   } catch(e) {
-    if (e.status === 403 || e.status === 401) {
-      sessionStorage.clear();
-      showToast('Session expired — please log in again.', true);
-      setTimeout(function() { showScreen('screen-login'); }, 1500);
-    } else {
-      showToast('Could not load tracks: ' + e.message, true);
-    }
+    showToast('Could not load tracks (' + (e.status || '?') + '): ' + e.message, true);
   } finally {
     setLoading(false);
   }
