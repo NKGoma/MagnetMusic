@@ -239,6 +239,7 @@
     }
   </style>
 </head>
+<script src="config.js"></script>
 <body>
 
 <div id="loading"><div class="spinner"></div><span id="loading-text">Loading…</span></div>
@@ -369,8 +370,8 @@
 </div>
 
 <script>
-/* CONFIG — paste your Client ID below */
-const CLIENT_ID    = '9e71315e7b0f496c8ffadbb3a1ef4aae';
+/* CONFIG — loaded from config.js (gitignored) */
+const CLIENT_ID    = window.SPOTIFY_CLIENT_ID || '9e71315e7b0f496c8ffadbb3a1ef4aae';
 const REDIRECT_URI = window.location.href.split('?')[0].split('#')[0];
 const SCOPES = [
   'user-read-private', 'playlist-read-private', 'playlist-read-collaborative',
@@ -440,6 +441,7 @@ async function login() {
   const params = new URLSearchParams({
     response_type: 'code', client_id: CLIENT_ID, scope: SCOPES,
     redirect_uri: REDIRECT_URI, code_challenge_method: 'S256', code_challenge: challenge,
+    show_dialog: 'true',
   });
   window.location = 'https://accounts.spotify.com/authorize?' + params;
 }
@@ -551,7 +553,7 @@ function renderPlaylists() {
     div.innerHTML =
       '<img src="' + img + '" alt="' + pl.name + '" loading="lazy" />' +
       '<div class="pl-name">' + pl.name + '</div>' +
-      '<div class="pl-count">' + pl.tracks.total + ' songs</div>';
+      '<div class="pl-count">' + (pl.tracks ? pl.tracks.total : 0) + ' songs</div>';
     div.onclick = function() { selectPlaylist(pl, div); };
     grid.appendChild(div);
   });
@@ -590,7 +592,7 @@ function renderPlayerInputs() {
 /* FETCH TRACKS */
 async function fetchAllTracks(playlistId) {
   const tracks = [];
-  let url = '/playlists/' + playlistId + '/tracks?limit=100';
+  let url = '/playlists/' + playlistId + '/tracks?limit=100&additional_types=track';
   while (url) {
     const data = await api(url);
     data.items.forEach(function(item) {
@@ -625,7 +627,7 @@ async function startGame() {
     renderPlayerChips();
     await playCurrentTrack();
   } catch(e) {
-    showToast('Could not load tracks: ' + e.message, true);
+    showToast('Could not load tracks (' + (e.status || '?') + '): ' + e.message, true);
   } finally {
     setLoading(false);
   }
