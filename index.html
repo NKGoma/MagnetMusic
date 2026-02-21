@@ -520,8 +520,12 @@ async function api(endpoint, method, body) {
     const msg = (err.error && err.error.message)
       ? err.error.message
       : (err.error_description || (typeof err.error === 'string' ? err.error : null) || text.slice(0, 150) || 'API error');
-    console.error('Spotify API ' + res.status + ' on ' + endpoint + ':', text);
-    const e = new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    const retryAfter = res.headers.get('Retry-After');
+    const fullMsg = (res.status === 429 && retryAfter)
+      ? (typeof msg === 'string' ? msg : 'Too many requests') + ' — wait ' + retryAfter + 's before retrying'
+      : (typeof msg === 'string' ? msg : JSON.stringify(msg));
+    console.error('Spotify API ' + res.status + ' on ' + endpoint + ':', text, retryAfter ? '(Retry-After: ' + retryAfter + 's)' : '');
+    const e = new Error(fullMsg);
     e.status = res.status;
     throw e;
   }
