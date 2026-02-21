@@ -433,6 +433,12 @@ async function login() {
     showToast('Please add your Spotify Client ID to index.html first!', true);
     return;
   }
+  const rateLimitUntil = parseInt(sessionStorage.getItem('rate_limit_until') || '0', 10);
+  if (Date.now() < rateLimitUntil) {
+    const secsLeft = Math.ceil((rateLimitUntil - Date.now()) / 1000);
+    showToast('Rate limited by Spotify. Wait ' + secsLeft + 's before trying again.', true);
+    return;
+  }
   const verifier   = randomString(64);
   const hashed     = await sha256(verifier);
   const challenge  = b64url(hashed);
@@ -521,8 +527,14 @@ async function api(endpoint, method, body) {
       ? err.error.message
       : (err.error_description || (typeof err.error === 'string' ? err.error : null) || text.slice(0, 150) || 'API error');
     const retryAfter = res.headers.get('Retry-After');
+    if (res.status === 429) {
+      const waitMs = retryAfter ? parseInt(retryAfter, 10) * 1000 : 60000;
+      sessionStorage.setItem('rate_limit_until', String(Date.now() + waitMs));
+    }
     const fullMsg = (res.status === 429 && retryAfter)
       ? (typeof msg === 'string' ? msg : 'Too many requests') + ' — wait ' + retryAfter + 's before retrying'
+      : (res.status === 429)
+      ? (typeof msg === 'string' ? msg : 'Too many requests') + ' — wait ~60s before retrying'
       : (typeof msg === 'string' ? msg : JSON.stringify(msg));
     console.error('Spotify API ' + res.status + ' on ' + endpoint + ':', text, retryAfter ? '(Retry-After: ' + retryAfter + 's)' : '');
     const e = new Error(fullMsg);
