@@ -465,6 +465,7 @@ async function handleCallback() {
     });
     const data = await res.json();
     if (!data.access_token) throw new Error(data.error_description || 'Token error');
+    console.log('Token obtained. Scope:', data.scope, '| Expires in:', data.expires_in, 's | Token prefix:', data.access_token.slice(0, 8));
     storeTokens(data);
     await loadPlaylists();
   } catch(e) {
@@ -513,8 +514,14 @@ async function api(endpoint, method, body) {
   const res = await fetch('https://api.spotify.com/v1' + endpoint, opts);
   if (res.status === 204 || res.status === 202) return null;
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    const e = new Error(err.error && err.error.message ? err.error.message : 'API error');
+    const text = await res.text().catch(() => '');
+    let err = {};
+    try { err = JSON.parse(text); } catch(_) {}
+    const msg = (err.error && err.error.message)
+      ? err.error.message
+      : (err.error_description || (typeof err.error === 'string' ? err.error : null) || text.slice(0, 150) || 'API error');
+    console.error('Spotify API ' + res.status + ' on ' + endpoint + ':', text);
+    const e = new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
     e.status = res.status;
     throw e;
   }
